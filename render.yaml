@@ -1,0 +1,17 @@
+# Render Blueprint: publica o jogo (pasta web/) como site estático com HTTPS automático.
+services:
+  - type: web
+    name: fnaf-de-ia
+    runtime: static
+    repo: https://github.com/PedroHSS456/Fnaf-de-IA
+    branch: main
+    buildCommand: echo "sem build"
+    staticPublishPath: ./web
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
