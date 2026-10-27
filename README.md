@@ -3,7 +3,7 @@
 Jogo de terror no navegador (e APK), com dois modos:
 
 - **New Game / Continue** — FNAF clássico em imagens: portas, luzes, câmeras com mapa clicável, energia, noites 1–5.
-- **Multiplayer** — cria ou entra numa sala e todos caem na pizzaria 3D: andar livre, animatrônicos que patrulham, portas, câmeras, energia e Foxy que corre.
+- **Multiplayer** — cria ou entra numa sala e todos caem na pizzaria 3D: andar livre numa pizzaria grande (salão, cozinha, bastidores, depósito, banheiros, cinema, fliperama, garagem), animatrônicos que patrulham, portas, câmeras, energia e Foxy que corre.
 
 A capa é a imagem `web/img/titulo.jpg`; os botões são invisíveis e ficam em cima de "New Game", "Continue" e "Multiplayer" (`web/css/fnaf-de-ia.css`, `web/js/fnaf-title.js`).
 
@@ -16,7 +16,7 @@ A capa é a imagem `web/img/titulo.jpg`; os botões são invisíveis e ficam em 
 |---|---|
 | Capa | N / Enter / 1 = New Game · C / 2 = Continue · M / 3 = Multiplayer |
 | Clássico | A / D portas · Z / X luz (segurar) · W câmeras · Q / E trocar câmera · ← / → olhar de lado · Esc sair |
-| Pizzaria | WASD andar · mouse/setas olhar · J / L portas · K câmeras · ← / → trocar câmera · Esc pausa |
+| Pizzaria | WASD andar · mouse/setas olhar · J / L portas (só perto do painel da porta) · K câmeras · ← / → trocar câmera · botão SAIR · Esc pausa |
 
 No celular, os mesmos botões aparecem na tela.
 

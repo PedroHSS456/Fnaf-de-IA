@@ -148,21 +148,23 @@
     <button id="sh-x" class="primary">Sair da loja</button>
   </section>
 
-  <section id="p-multi" class="panel wide" hidden>
-    <h2>Multiplayer</h2>
-    <p class="note">Jogando como <b id="mp-name"></b></p>
-    <div class="mp-status" id="mp-status">Escolha uma sala ou crie uma nova.</div>
-    <div class="mp-row">
-      <input id="mp-room" class="nm" maxlength="24" placeholder="Nome da sala, ex.: Aventura dos Dobradores" disabled>
-      <button id="mp-create" disabled>Criar sala</button>
-    </div>
-    <div class="cols">
-      <div class="card"><h3>Salas disponíveis</h3>
-        <div class="list" id="mp-list"><div class="note">Nenhuma sala encontrada.</div></div>
-        <button id="mp-refresh" disabled>Atualizar lista</button>
+  <section id="p-multi" class="panel wide fz" hidden>
+    <div class="fz-top"><span class="fz-rec">● REC</span><b>CENTRAL DE VIGILÂNCIA</b><span id="fz-clock">12:00</span></div>
+    <p class="fz-sub">PIZZARIA DO URSO MOFO · Vigia <b id="mp-name"></b></p>
+    <div class="mp-status" id="mp-status">Escolha uma sala ou abra uma nova.</div>
+    <div class="fz-new">
+      <label for="mp-room">&gt; ABRIR NOVA SALA DE TURNO</label>
+      <div class="mp-row">
+        <input id="mp-room" class="nm" maxlength="24" placeholder="NOME DA SALA" autocomplete="off" disabled>
+        <button id="mp-create" disabled>ABRIR SALA</button>
       </div>
     </div>
-    <button data-back class="primary">Voltar</button>
+    <div class="fz-feeds">
+      <div class="fz-h">&gt; TURNOS EM ANDAMENTO</div>
+      <div class="list" id="mp-list"><div class="note">SEM SINAL.</div></div>
+      <button id="mp-refresh" disabled>ATUALIZAR SINAL</button>
+    </div>
+    <button data-back class="primary">VOLTAR</button>
   </section>
 
   <section id="p-name" class="panel" hidden>

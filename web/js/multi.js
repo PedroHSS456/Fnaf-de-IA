@@ -146,13 +146,14 @@
     try {
       const rooms = await MP.list(); box.textContent = '';
       if (!rooms.length) { box.textContent = 'Nenhuma sala encontrada. Crie uma!'; MP.setStatus('Nenhuma sala aberta agora.'); return; }
-      for (const r of rooms) {
-        const row = document.createElement('div'); row.className = 'mp-row';
-        const info = document.createElement('span'); info.textContent = r.name + ' — ' + r.count + '/' + r.max + ' jogadores';
-        const b = document.createElement('button'); b.textContent = 'Entrar'; b.disabled = r.count >= r.max;
+      rooms.forEach((r, n) => {
+        const row = document.createElement('div'); row.className = 'mp-row fz-feed';
+        const cam = document.createElement('i'); cam.textContent = 'CAM ' + String(n + 1).padStart(2, '0');
+        const info = document.createElement('span'); info.textContent = r.name + ' · ' + r.count + '/' + r.max + ' vigias';
+        const b = document.createElement('button'); b.textContent = r.count >= r.max ? 'LOTADA' : 'ENTRAR'; b.disabled = r.count >= r.max;
         b.onclick = () => enterRoom(r.id, r.name);
-        row.append(info, b); box.appendChild(row);
-      }
+        row.append(cam, info, b); box.appendChild(row);
+      });
       MP.setStatus('Salas atualizadas.');
     } catch (e) {
       box.textContent = 'Nenhuma sala disponível.';

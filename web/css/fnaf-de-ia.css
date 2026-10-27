@@ -8,3 +8,28 @@
 #ft-new{top:53.7%}#ft-cont{top:63.5%}#ft-mp{top:73.3%}
 #hud{display:none!important}
 #p-pause #pz-jor,#p-pause #pz-fnaf,#p-pause #pz-fnafmp,#p-pause #pz-set{display:none!important}
+
+/* tela de salas: monitor de vigilância */
+#p-multi.fz{width:min(96vw,720px);background:#040705;border:2px solid #2c3a30;border-radius:6px;font-family:ui-monospace,'Courier New',monospace;color:#9dffb0;padding:16px 16px 18px;text-align:left;gap:12px;box-shadow:0 0 0 4px #0b0f0c,inset 0 0 60px rgba(60,255,120,.10);overflow:hidden;animation:fz-flk 5s infinite}
+#p-multi.fz::before{inset:0;border:0;border-radius:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.30) 0 2px,transparent 2px 4px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55));z-index:3}
+@keyframes fz-flk{0%,92%,100%{filter:none}93%{filter:brightness(1.25) contrast(1.1)}95%{filter:brightness(.8)}}
+.fz-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;letter-spacing:.14em;border-bottom:1px solid #2c5a3a;padding-bottom:8px}
+.fz-top b{color:#ffd45a;font-size:17px}
+.fz-rec{color:#ff3b30;animation:fz-blink 1s steps(2) infinite}
+@keyframes fz-blink{50%{opacity:0}}
+.fz-sub{margin:0;font-size:12px;letter-spacing:.12em;color:#6fbf86}
+#p-multi.fz .mp-status{background:rgba(20,60,30,.35);border:1px dashed #2c5a3a;border-radius:2px;color:#9dffb0;font-size:12px;letter-spacing:.06em;margin:0;text-transform:uppercase}
+#p-multi.fz .mp-status[data-s='err']{color:#ff8a7a;border-color:#7a2a22}
+.fz-new label,.fz-h{font-size:12px;letter-spacing:.16em;color:#ffd45a}
+#p-multi.fz input{background:#000;color:#9dffb0;border:1px solid #2c5a3a;border-radius:2px;font:700 15px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;padding:11px 12px;min-height:46px}
+#p-multi.fz input::placeholder{color:#3d7a52}
+#p-multi.fz button{background:#000;color:#9dffb0;border:1px solid #9dffb0;border-radius:2px;font:700 13px ui-monospace,monospace;letter-spacing:.14em;box-shadow:none;min-height:46px}
+#p-multi.fz button:hover:not(:disabled){background:#9dffb0;color:#000}
+#p-multi.fz button.primary{background:#2a0a08;color:#ff8a7a;border-color:#ff3b30}
+#p-multi.fz button.primary:hover{background:#ff3b30;color:#000}
+#p-multi.fz .list{border:1px solid #2c5a3a;padding:8px;min-height:90px;max-height:36vh;overflow-y:auto;background:rgba(0,0,0,.4);font-size:13px}
+#p-multi.fz .fz-feed{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;border-left:3px solid #ff3b30;padding:6px 8px;margin-bottom:6px;background:rgba(40,100,60,.12)}
+#p-multi.fz .fz-feed i{font-style:normal;color:#ffd45a;letter-spacing:.1em}
+#p-multi.fz .fz-feed span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#p-multi.fz .fz-feed button{min-height:38px;padding:6px 12px}
+#p-multi.fz .note{color:#6fbf86}
