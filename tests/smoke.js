@@ -1,0 +1,39 @@
+// Teste rápido do Fnaf de IA: capa, botões invisíveis, clássico, multiplayer (sala simulada) e andar na pizzaria.
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const p = await b.newPage({ viewport: { width: 480, height: 270 } });
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  await p.goto('file://' + __dirname + '/../web/index.html');
+  await p.waitForFunction('window.__ready', null, { timeout: 240000 }).catch(() => errs.push('timeout ready'));
+  const r = {}; const vis = (sel) => p.evaluate((s) => { const e = document.querySelector(s); return !!e && !e.hidden && getComputedStyle(e).display !== 'none'; }, sel);
+  r.capa = await vis('#ft');
+  // botões invisíveis ficam em cima do texto da imagem
+  r.pos = await p.evaluate(() => ['ft-new', 'ft-cont', 'ft-mp'].map((i) => { const q = document.getElementById(i).getBoundingClientRect(); return [Math.round(q.top), Math.round(q.height)]; }));
+  await p.click('#ft-new'); await p.waitForTimeout(500);
+  r.classico = await vis('#fc') && !(await vis('#ft'));
+  r.dicaPC = await p.evaluate(() => /PC:/.test(document.getElementById('fc-m').textContent));
+  await p.evaluate(() => document.querySelector('#fc-m button').click()); await p.waitForTimeout(600);
+  await p.keyboard.press('a'); r.portaTecla = await p.evaluate(() => G.fnafc.state().door[0] === 1);
+  await p.keyboard.press('w'); r.camTecla = await p.evaluate(() => G.fnafc.state().cam === true);
+  await p.keyboard.press('e'); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  r.voltaCapa = await vis('#ft') && !(await vis('#fc'));
+  await p.click('#ft-cont'); await p.waitForTimeout(300); r.continuar = await vis('#fc'); await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  await p.keyboard.press('m'); await p.waitForTimeout(300); r.painelSalas = await vis('#p-multi');
+  await p.evaluate(() => { G.mp.create = async () => ({ id: 'x', name: 'teste' }); G.mp.join = async () => {}; G.mp.send = () => {}; });
+  await p.click('#mp-create'); await p.waitForTimeout(3500);
+  r.pizzaria = await p.evaluate(() => G.pizza.inside && G.main.running && !G.main.paused);
+  const a = await p.evaluate(() => ({ x: G.player.x, z: G.player.z, inBox: G.pizza.inBox(G.player.x, G.player.z) }));
+  const hold = async (k, ms) => { await p.evaluate((q) => { G.input.keys[q] = true; }, k); await p.waitForTimeout(ms); await p.evaluate((q) => { G.input.keys[q] = false; }, k); };
+  const pos = () => p.evaluate(() => ({ x: G.player.x, z: G.player.z, inBox: G.pizza.inBox(G.player.x, G.player.z) }));
+  r.fps = await p.evaluate(() => new Promise((ok) => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 > 1000) ok(n); else requestAnimationFrame(f); }; f(); }));
+  await p.evaluate(() => { G.input.keys.w = true; }); await p.waitForTimeout(600); r.vel = await p.evaluate(() => [G.player.vx, G.player.vz, G.player.stun, G.input.move && G.input.move()]); await p.evaluate(() => { G.input.keys.w = false; });
+  await hold('a', 4500); const m1 = await pos(); await hold('w', 3500); const c = await pos(); r.m1 = m1;
+  r.entrou = a.inBox; r.andou = Math.hypot(c.x - a.x, c.z - a.z) > 6; r.saiuEscritorio = c.z < 73; r.dentro = c.inBox; r.a = a; r.c = c;
+  await p.keyboard.press('k'); r.camPizza = await p.evaluate(() => G.pizza.camOn === true); await p.keyboard.press('k');
+  await p.keyboard.press('j'); r.portaPizza = await p.evaluate(() => G.pizza.doors[0] === true);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(300); r.pausa = await vis('#p-pause') && !(await vis('#pz-jor'));
+  await p.click('#pz-title'); await p.waitForTimeout(1500); r.sair = await vis('#ft') && !(await p.evaluate(() => G.pizza.inside));
+  console.log(JSON.stringify(r)); console.log('erros:', errs.length ? errs.slice(0, 5) : 'nenhum');
+  await p.screenshot({ path: process.env.SHOT || '/tmp/ft.png' }); await b.close();
+})();

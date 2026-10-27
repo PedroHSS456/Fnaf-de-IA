@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Fnaf de IA</title>
+<link rel="stylesheet" href="css/style.css?v=0128">
+<link rel="stylesheet" href="css/fnaf-de-ia.css">
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="touch"></div>
+<div id="gtrail"></div>
+
+<div id="hud" hidden>
+  <div id="vig"></div>
+  <div id="cros"></div>
+  <div id="tl">
+    <div id="emb"><span id="emb-i">✦</span><b id="lv">1</b></div>
+    <div id="stats">
+      <div id="elname"></div>
+      <div class="bar hp"><i id="hpb"></i><em id="hpt"></em></div>
+      <div class="bar chi"><i id="chib"></i><em id="cht"></em></div>
+      <div class="bar water" id="wbox"><i id="wb"></i></div>
+      <div class="bar ms"><i id="msb"></i><em id="mst"></em></div>
+      <div class="bar xp"><i id="xpb"></i></div>
+    </div>
+  </div>
+  <div id="top">
+    <div id="compass"></div>
+    <div id="loc"><span id="reg"></span><span id="tm"></span></div>
+    <div id="quest"></div>
+  </div>
+  <div id="tr"><button id="b-inv" class="ic" aria-label="Mochila">🎒</button><button id="b-menu" class="ic" aria-label="Menu">&#9776;</button></div>
+  <div id="boss" hidden><b id="boss-n"></b><div class="bar boss"><i id="boss-b"></i></div></div>
+  <button id="b-act" class="act" hidden>Falar</button>
+  <button id="b-sleep" class="act" hidden>Dormir</button>
+  <button id="b-elc" class="sm"><b>◈</b>Elemento</button>
+  <button id="b-guard" class="sm hold"><b>⛨</b>Guarda</button>
+  <button id="b-seis" class="sm" hidden><b>◉</b>Sísmica</button>
+  <button id="b-dodge" class="jb hold"><b>≫</b>Esquiva</button>
+  <button id="b-jump" class="jb hold"><b>▲</b>Pular</button>
+  <button id="b-punch"><b>👊</b>Atacar</button>
+  <div id="pad"><span>DOBRAR</span></div>
+</div>
+
+<div id="cine" hidden><i class="bar t"></i><i class="bar b"></i><p id="cine-t"></p><button id="cine-skip">Pular ▸</button></div>
+<div id="elmenu" hidden></div>
+
+<div id="ft" role="menu" aria-label="Menu principal">
+  <div id="ft-s">
+    <img id="ft-img" src="img/titulo.jpg" alt="Capa do jogo" draggable="false">
+    <button id="ft-new" aria-label="New Game" title="New Game (N / Enter)"></button>
+    <button id="ft-cont" aria-label="Continue" title="Continue (C)"></button>
+    <button id="ft-mp" aria-label="Multiplayer" title="Multiplayer (M)"></button>
+  </div>
+</div>
+
+<div id="menus" hidden>
+  <section id="p-title" class="panel" hidden>
+    <div class="crest"><i style="--c:#ff7a3a"></i><i style="--c:#5fb8ff"></i><i style="--c:#c89a5a"></i><i style="--c:#e8f2ff"></i></div>
+    <h1>ELEMENTAL<br>WORLD</h1>
+    <p class="sub">Dobre os elementos. Escolha seu caminho.</p>
+    <button id="m-cont" class="primary">Continuar</button>
+    <button id="m-new">Novo jogo</button>
+    <button id="m-multi">Multiplayer</button>
+    <button id="m-fnaf">FNAF (clássico)</button>
+    <button id="m-fnafmp">FNAF multiplayer</button>
+    <button id="m-set">Configurações</button>
+    <button id="m-wipe" class="danger" hidden>Apagar dados</button>
+    <p class="note" id="m-note"></p>
+  </section>
+
+  <section id="p-roulette" class="panel" hidden>
+    <h2>Roleta dos Elementos</h2>
+    <div id="rl-name">?</div>
+    <div class="chips"><span style="--c:#ff7a3a">Fogo 24%</span><span style="--c:#5fb8ff">Água 24%</span><span style="--c:#c89a5a">Terra 24%</span><span style="--c:#e8f2ff">Ar 24%</span><span style="--c:#d98cff">Avatar 4%</span></div>
+    <p class="note" id="rl-res">O elemento fica preso à sua jornada até apagar os dados.</p>
+    <button id="rl-spin" class="primary">Girar</button>
+    <button id="rl-go" class="primary" hidden>Entrar no mundo</button>
+  </section>
+
+  <section id="p-pause" class="panel" hidden>
+    <h2>Pausa</h2>
+    <button id="pz-res" class="primary">Continuar</button>
+    <button id="pz-jor">Diário e inventário</button>
+    <button id="pz-fnaf" hidden>FNAF (clássico)</button>
+    <button id="pz-fnafmp" hidden>FNAF multiplayer</button>
+    <button id="pz-set">Configurações</button>
+    <button id="pz-title" class="danger">Menu principal (salva)</button>
+  </section>
+
+  <section id="p-journal" class="panel wide" hidden>
+    <h2>Diário</h2>
+    <div class="cols">
+      <div class="card"><h3>Missões</h3><div id="jr-q" class="list"></div></div>
+      <div class="card"><h3>Maestria</h3><div id="jr-m" class="list"></div></div>
+      <div class="card"><h3>Inventário</h3><div id="jr-i" class="list"></div></div>
+    </div>
+    <button data-back>Voltar</button>
+  </section>
+
+  <section id="p-settings" class="panel wide" hidden>
+    <h2>Configurações</h2>
+    <div class="cols">
+      <div class="card">
+        <h3>Controles</h3>
+        <label>Sensibilidade da câmera <output id="o-cs"></output><input type="range" id="s-cs" min="0.4" max="2.5" step="0.05"></label>
+        <label>Tamanho do joystick <output id="o-js"></output><input type="range" id="s-js" min="0.6" max="1.6" step="0.05"></label>
+        <label>Tamanho da interface <output id="o-hs"></output><input type="range" id="s-hs" min="0.7" max="1.4" step="0.05"></label>
+        <label>Campo de visão extra <output id="o-fv"></output><input type="range" id="s-fv" min="-10" max="15" step="1"></label>
+        <button id="s-fp">Câmera: primeira pessoa</button>
+      </div>
+      <div class="card">
+        <h3>Gráficos e jogo</h3>
+        <button id="s-gfx" hidden>Estilo: Desenho de papel</button>
+        <button id="s-gq">Qualidade realista: Médio</button>
+        <button id="s-sh">Shaders: Médio</button>
+        <button id="s-nm">Seu nome</button>
+        <button id="s-res">Resolução: Alta</button>
+        <button id="s-sync">Horário do mundo</button>
+        <button id="s-ff">Ativar fogo amigo</button>
+        <button id="s-diff">Dificuldade: Normal</button>
+        <p class="note">Resolução, partículas e distância mudam na hora. Forma de árvores e casas muda ao reiniciar.</p>
+      </div>
+      <div class="card seis">
+        <h3>Visão sísmica</h3>
+        <p class="note" id="s-seis-note"></p>
+        <button id="s-seis">Visão sísmica</button>
+        <label>Intensidade das ondas <output id="o-si"></output><input type="range" id="s-si" min="0.5" max="1.6" step="0.05"></label>
+        <label>Brilho roxo <output id="o-sg"></output><input type="range" id="s-sg" min="0.5" max="1.6" step="0.05"></label>
+        <button id="s-sq">Qualidade sísmica: Alta</button>
+      </div>
+    </div>
+    <button data-back class="primary">Voltar</button>
+  </section>
+
+  <section id="p-inv" class="panel wide" hidden>
+    <h2>Mochila</h2><div class="sub2"><span id="inv-c"></span><span id="inv-e"></span></div>
+    <div id="inv-l" class="shl"></div>
+    <button id="inv-x" class="primary">Fechar</button>
+  </section>
+
+  <section id="p-shop" class="panel wide" hidden>
+    <h2 id="sh-n"></h2><div class="sub2"><span id="sh-c"></span></div>
+    <div class="tabs"><button id="sh-b">Comprar</button><button id="sh-s">Vender</button></div>
+    <div id="sh-l" class="shl"></div>
+    <button id="sh-x" class="primary">Sair da loja</button>
+  </section>
+
+  <section id="p-multi" class="panel wide" hidden>
+    <h2>Multiplayer</h2>
+    <p class="note">Jogando como <b id="mp-name"></b></p>
+    <div class="mp-status" id="mp-status">Escolha uma sala ou crie uma nova.</div>
+    <div class="mp-row">
+      <input id="mp-room" class="nm" maxlength="24" placeholder="Nome da sala, ex.: Aventura dos Dobradores" disabled>
+      <button id="mp-create" disabled>Criar sala</button>
+    </div>
+    <div class="cols">
+      <div class="card"><h3>Salas disponíveis</h3>
+        <div class="list" id="mp-list"><div class="note">Nenhuma sala encontrada.</div></div>
+        <button id="mp-refresh" disabled>Atualizar lista</button>
+      </div>
+    </div>
+    <button data-back class="primary">Voltar</button>
+  </section>
+
+  <section id="p-name" class="panel" hidden>
+    <h2>Seu nome</h2>
+    <p class="note">Ele aparece acima do seu personagem no multiplayer. Deixe em branco para usar “Player N”.</p>
+    <input id="nm-in" class="nm" maxlength="16" autocomplete="off" placeholder="Player 1">
+    <button id="nm-ok" class="primary">Continuar</button>
+    <button data-back>Voltar</button>
+  </section>
+
+  <section id="p-dialog" class="panel dlg" hidden>
+    <b id="dl-n"></b>
+    <p id="dl-t"></p>
+    <div id="dl-b"></div>
+  </section>
+
+  <section id="p-death" class="panel" hidden>
+    <h2>Você caiu</h2>
+    <p class="note">Renasça no último ponto seguro com 60% da vida.</p>
+    <button id="dt-r" class="primary">Renascer</button>
+  </section>
+</div>
+
+<div id="fade"></div>
+<div id="toast"></div>
+<div id="banner"><b></b><span></span></div>
+<div id="pick"></div>
+<div id="dmgs"></div>
+
+<div id="loader">
+  <div class="ldbox">
+    <div class="crest"><i style="--c:#ff7a3a"></i><i style="--c:#5fb8ff"></i><i style="--c:#c89a5a"></i><i style="--c:#e8f2ff"></i></div>
+    <h1>ELEMENTAL WORLD</h1>
+    <div class="bar"><i id="ld-bar"></i></div>
+    <p id="ld-txt">Carregando…</p>
+  </div>
+</div>
+
+<script src="js/math.js?v=0128"></script>
+<script src="js/gfx.js?v=0128"></script>
+<script src="js/world.js?v=0128"></script>
+<script src="js/structs.js?v=0128"></script>
+<script src="js/fx.js?v=0128"></script>
+<script src="js/env.js?v=0128"></script>
+<script src="js/models.js?v=0128"></script>
+<script src="js/save.js?v=0128"></script>
+<script src="js/input.js?v=0128"></script>
+<script src="js/camera.js?v=0128"></script>
+<script src="js/progress.js?v=0128"></script>
+<script src="js/player.js?v=0128"></script>
+<script src="js/combat.js?v=0128"></script>
+<script src="js/dynprops.js?v=0128"></script>
+<script src="js/inter.js?v=0128"></script>
+<script src="js/extras.js?v=0128"></script>
+<script src="js/bend.js?v=0128"></script>
+<script src="js/fire.js?v=0128"></script>
+<script src="js/water.js?v=0128"></script>
+<script src="js/earth.js?v=0128"></script>
+<script src="js/air.js?v=0128"></script>
+<script src="js/glider.js?v=0128"></script>
+<script src="js/enemies.js?v=0128"></script>
+<script src="js/audio.js?v=0128"></script>
+<script src="js/quests.js?v=0128"></script>
+<script src="js/npcs.js?v=0128"></script>
+<script src="js/interact.js?v=0128"></script>
+<script src="js/story.js?v=0128"></script>
+<script src="js/drag.js?v=0128"></script>
+<script src="js/gesture.js?v=0128"></script>
+<script src="js/houses.js?v=0128"></script>
+<script src="js/pizzaria.js?v=0128"></script>
+<script src="js/rest.js?v=0128"></script>
+<script src="js/seis.js?v=0128"></script>
+<script src="js/mastery.js?v=0128"></script>
+<script src="js/train.js?v=0128"></script>
+<script src="js/items.js?v=0128"></script>
+<script src="js/dungeon.js?v=0128"></script>
+<script src="js/ui.js?v=0128"></script>
+<script src="js/mpconfig.js?v=0128"></script>
+<script src="js/multi.js?v=0128"></script>
+<script src="js/mpsync.js?v=0128"></script>
+<script src="js/events.js?v=0128"></script>
+<script src="js/animals.js?v=0128"></script>
+<script src="js/guide.js?v=0128"></script>
+<script src="js/chat.js?v=0128"></script>
+<script src="js/horror.js?v=0128"></script>
+<script src="js/fnaf.js?v=0128"></script>
+<script src="js/fnaf-classic.js?v=0128"></script>
+<script src="js/fnaf-title.js?v=0128"></script>
+<script src="js/main.js?v=0128"></script>
+<div id="ver" style="position:fixed;left:6px;bottom:4px;z-index:50;font:11px/1 system-ui,sans-serif;color:rgba(255,255,255,.55);pointer-events:none">Versão web 0.1.28</div>
+</body>
+</html>

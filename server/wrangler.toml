@@ -1,0 +1,17 @@
+name = "elemental-world-mp"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+# Salas de jogo: um Durable Object por sala (guarda os jogadores conectados).
+# Lobby: um único Durable Object com a lista de salas.
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room", "Lobby"]

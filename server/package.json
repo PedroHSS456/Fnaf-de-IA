@@ -1,0 +1,15 @@
+{
+  "name": "elemental-world-mp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Servidor de salas do Elemental World (Cloudflare Workers + Durable Objects)",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/core.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

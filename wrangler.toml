@@ -1,0 +1,16 @@
+# Configuração do servidor de salas, na raiz para o deploy automático do Cloudflare (sem campo "Root directory").
+name = "elemental-world-mp"
+main = "server/src/index.js"
+compatibility_date = "2025-09-01"
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room", "Lobby"]

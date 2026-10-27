@@ -1,0 +1,18 @@
+'use strict';
+/* Capa do Fnaf de IA: imagem de fundo com botões invisíveis (New Game / Continue / Multiplayer) e atalhos de PC. */
+(function () {
+  const G = window.G, $ = (id) => document.getElementById(id);
+  G.fnafOnly = true;
+  const ft = $('ft');
+  // a capa aparece sempre que o jogo pede o menu principal
+  const um = G.ui.menu;
+  G.ui.menu = function (n) { ft.hidden = n !== 'title'; return um.apply(this, arguments); };
+  const go = (fn) => () => { if (ft.hidden) return; fn(); };
+  const play = (reset) => { try { if (reset) localStorage.setItem('ew_fnafc_n', '1'); } catch (e) { /* sem storage */ } G.ui.menu(null); G.fnaf && G.fnaf.audio.init(); G.fnafc.start(); };
+  const nw = go(() => play(true)), ct = go(() => play(false)), mp = go(() => { G.fnafMode = true; $('mp-name').textContent = G.save.settings.name || 'Player 1'; $('m-multi').click(); });
+  $('ft-new').onclick = nw; $('ft-cont').onclick = ct; $('ft-mp').onclick = mp;
+  window.addEventListener('keydown', (e) => {
+    if (ft.hidden || e.repeat) return; const k = e.key.toLowerCase();
+    if (k === 'n' || k === 'enter' || k === '1') nw(); else if (k === 'c' || k === '2') ct(); else if (k === 'm' || k === '3') mp();
+  });
+})();
