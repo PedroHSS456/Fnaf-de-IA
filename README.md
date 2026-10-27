@@ -30,3 +30,9 @@ O servidor de salas está em `server/` (Cloudflare Workers + Durable Objects); o
 `node tests/smoke.js` abre o jogo num Chromium sem tela e confere capa, clássico, sala, andar na pizzaria e sair.
 
 > O motor vem do jogo Elemental World; os arquivos não usados pelo FNAF continuam na pasta `web/js` porque a pizzaria 3D roda em cima dele.
+
+## Noites e reanimação (multiplayer)
+- Na tela de salas, escolha **FNAF 1** e a **noite**. A Noite 1 já vem liberada; concluir uma noite (6 da manhã) libera a próxima. Cada sala carrega a noite escolhida por quem a criou (aparece como "· N3" no nome).
+- Cada noite deixa os animatrônicos mais rápidos, mais ativos e mais espertos (enxergam de mais longe, perseguem por mais tempo, miram mais o escritório; a Raposa corre com mais frequência).
+- Quando um animatrônico pega você, você cai: seu corpo fica no chão, marcado em vermelho, e você pode olhar as câmeras. Um colega vivo chega perto do corpo e **segura REANIMAR** (botão na tela ou tecla **E**) por 4 segundos. Quem é reanimado levanta com 3 segundos de proteção. Quem pegou volta para o palco.
+- Se todos caírem, ou o único jogador da sala cair, a noite acaba e é preciso recomeçar.

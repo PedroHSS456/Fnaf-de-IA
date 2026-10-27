@@ -7,7 +7,7 @@
   const Pz = (G.pizza = { active: false, inside: false, session: false, t0: 0, lamp: false, bat: 100, scare: null, caught: 0, over: false });
   const PX = 120, PZ = 30, Y0 = 24, WH = 4.2, SIZE_U = 76, SIZE_V = 48;
   const inBox = (x, z) => x > PX - 2 && x < PX + SIZE_U + 2 && z > PZ - 2 && z < PZ + SIZE_V + 2;
-  Pz.inBox = inBox;
+  Pz.inBox = inBox; Pz.bodies = new Map(); Pz.night = 1; Pz.down = false; Pz.ended = false; Pz.revT = 0; Pz.safe = 0; Pz.revHold = false; Pz.nearBody = null;
   const gy0 = W.groundY, wd0 = W.waterDepth, lv0 = W.isLava, fz0 = W.freeZone;
   W.groundY = (x, z) => (Pz.active && inBox(x, z) ? Y0 : gy0(x, z));
   W.waterDepth = (x, z) => (Pz.active && inBox(x, z) ? 0 : wd0(x, z));
@@ -240,13 +240,14 @@
   const TO_OFFICE = bfsFrom(OFFICE).d;
   const hash = (a, b, c) => { let h = (Math.imul(a + 1, 374761393) ^ Math.imul(b + 7, 668265263) ^ Math.imul(c + 13, 2147483647)) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; return (h ^ (h >>> 16)) / 4294967296; };
   const STEP = [3.0, 3.3, 2.8, 3.6];
+  const NM = () => 1 + 0.2 * ((Pz.night || 1) - 1), NI = () => (Pz.night || 1) - 1; // noites mais altas: mais rápidos, ativos e espertos
   const state = [0, 1, 2, 3].map((i) => ({ i, mode: i === 3 ? 'idle' : 'patrol', base: 0, wt: 0, pi: 0, path: null, nextRun: 0, after: 'patrol', step: 0, node: [0, 0, 0, 1][i], prev: [0, 0, 0, 1][i], chase: false, x: 0, z: 0, y: 0, yaw: 0, move: false, lastSeen: 0, path: null, freeze: 0 }));
   const hourOf = () => Math.min(5, Math.floor((Date.now() - Pz.t0) / 1000 / 40));
   function patrolAt(c, T) {
-    const dur = STEP[c.i] * (1 - 0.08 * hourOf()) / (Pz.out ? 1.5 : 1), s = Math.floor(T / dur);
+    const dur = STEP[c.i] * (1 - 0.08 * hourOf()) / (Pz.out ? 1.5 : 1) / NM(), s = Math.floor(T / dur);
     while (c.step < s) { // avança o passeio aleatório determinístico
       c.step++; const cur = c.node; let nb = ADJ[cur].filter((n) => n !== c.prev && !doorBlocks(cur, n)); if (!nb.length) nb = ADJ[cur].filter((n) => !doorBlocks(cur, n)); if (!nb.length) nb = [cur]; c.prev = cur;
-      const bias = 0.18 + 0.1 * hourOf(); let nx;
+      const bias = 0.18 + 0.1 * hourOf() + 0.1 * NI(); let nx;
       if (hash(c.i, c.step, 5) < bias) { nx = nb.slice().sort((a, b) => TO_OFFICE[a] - TO_OFFICE[b])[0]; } else nx = nb[Math.floor(hash(c.i, c.step, 9) * nb.length)];
       c.node = nx == null ? cur : nx;
     }
@@ -288,7 +289,7 @@
   const CAMS = [['PALCO', [16, 14], [16, 3]], ['SALÃO', [4, 16], [14, 12]], ['SALÃO DIR', [30, 16], [20, 12]], ['CORREDOR', [4, 33], [5, 25]], ['CORREDOR DIR', [26, 33], [26, 22]], ['COZINHA', [42, 20], [38, 6]], ['DEPÓSITO', [41, 33], [40, 44]], ['SALA DE FESTA', [9, 44], [16, 30]], ['ESCRITÓRIO', [20, 46], [14, 40]], ['BANHEIROS', [45, 10.5], [53, 4]], ['CINEMA', [75, 11], [64, 3]], ['FLIPERAMA', [45.5, 14], [62, 22]], ['FLIPERAMA FUNDO', [74.5, 27.5], [58, 19]], ['GARAGEM', [45, 47], [62, 38]], ['GARAGEM FUNDO', [75, 31], [60, 40]]];
   Pz.camOn = false; Pz.camIdx = 0; let camSaved = null;
   const ui = document.createElement('div'); ui.id = 'pz-ui';
-  ui.innerHTML = '<div id="pz-cn"></div><div id="pz-cb"></div><div id="pz-bar"><button type="button" id="pz-cam">CÂMERAS</button><button type="button" id="pz-dl">PORTA ESQ</button><button type="button" id="pz-dr">PORTA DIR</button></div><button type="button" id="pz-exit">SAIR</button>';
+  ui.innerHTML = '<div id="pz-cn"></div><div id="pz-cb"></div><div id="pz-bar"><button type="button" id="pz-cam">CÂMERAS</button><button type="button" id="pz-dl">PORTA ESQ</button><button type="button" id="pz-dr">PORTA DIR</button></div><button type="button" id="pz-exit">SAIR</button><div id="pz-down"><b>ABATIDO</b><span>Aguarde um colega te reanimar · você ainda pode usar as câmeras</span></div><button type="button" id="pz-rev">REANIMAR (segure)</button>';
   document.body.appendChild(ui);
   const cb = ui.querySelector('#pz-cb'), cn = ui.querySelector('#pz-cn'), bar = ui.querySelector('#pz-bar');
   CAMS.forEach((c, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = c[0]; b.addEventListener('click', () => { Pz.camIdx = i; }); cb.appendChild(b); });
@@ -296,8 +297,9 @@
   function camToggle(on) { Pz.camOn = on; cb.style.display = on ? 'flex' : 'none'; cn.style.display = on ? 'block' : 'none'; if (on) camSaved = { x: G.player.x, z: G.player.z, yaw: G.cam.yaw }; else if (camSaved) { G.player.teleport(camSaved.x, camSaved.z, camSaved.yaw); camSaved = null; } }
   ui.querySelector('#pz-cam').addEventListener('click', () => { if (!Pz.out) camToggle(!Pz.camOn); });
   ui.querySelector('#pz-exit').addEventListener('click', () => Pz.exit());
-  const dlB = ui.querySelector('#pz-dl'), drB = ui.querySelector('#pz-dr');
-  const doorBtn = (i, id) => ui.querySelector(id).addEventListener('click', () => { if (Pz.out) return; Pz.doors[i] = !Pz.doors[i]; ui.querySelector(id).classList.toggle('on', Pz.doors[i]); if (G.fnaf) G.fnaf.audio.slam(); });
+  const dlB = ui.querySelector('#pz-dl'), drB = ui.querySelector('#pz-dr'), dnEl = ui.querySelector('#pz-down'), revB = ui.querySelector('#pz-rev');
+  revB.addEventListener('pointerdown', (e) => { e.preventDefault(); Pz.revHold = true; }); ['pointerup', 'pointerleave', 'pointercancel'].forEach((n) => revB.addEventListener(n, () => { Pz.revHold = false; }));
+  const doorBtn = (i, id) => ui.querySelector(id).addEventListener('click', () => { if (Pz.out || Pz.down) return; Pz.doors[i] = !Pz.doors[i]; ui.querySelector(id).classList.toggle('on', Pz.doors[i]); if (G.fnaf) G.fnaf.audio.slam(); });
   doorBtn(0, '#pz-dl'); doorBtn(1, '#pz-dr');
   Pz.preView = function () {
     if (!Pz.camOn || !Pz.inside) return; const c = CAMS[Pz.camIdx], C = G.cam;
@@ -311,6 +313,9 @@
 #pz-bar button{font:700 13px system-ui,sans-serif;color:#fff;background:rgba(40,40,44,.9);border:2px solid #777;border-radius:9px;padding:10px 12px}
 #pz-bar button.on{background:#b3261a;border-color:#ff8a7a}
 #pz-dl,#pz-dr{display:none}
+#pz-down{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(ellipse at center,rgba(70,0,0,.35),rgba(0,0,0,.86));color:#ff8a7a;font:700 24px ui-monospace,monospace;letter-spacing:.2em;text-align:center;pointer-events:none;padding:20px}
+#pz-down span{font-size:13px;color:#e8e0d0;letter-spacing:.05em}
+#pz-rev{display:none;position:fixed;left:50%;bottom:78px;transform:translateX(-50%);pointer-events:auto;touch-action:none;font:700 15px system-ui,sans-serif;color:#fff;background:rgba(30,110,60,.95);border:2px solid #9affb8;border-radius:10px;padding:12px 18px}
 #pz-exit{position:fixed;right:10px;top:10px;pointer-events:auto;font:700 13px system-ui,sans-serif;color:#fff;background:rgba(120,20,16,.92);border:2px solid #ff8a7a;border-radius:9px;padding:9px 14px}
 #pz-cb{position:fixed;left:0;right:0;top:44px;display:none;flex-wrap:wrap;justify-content:center;gap:6px;pointer-events:auto}
 #pz-cb button{font:700 12px ui-monospace,monospace;color:#fff;background:rgba(10,20,30,.85);border:1px solid #9fb6cc;border-radius:6px;padding:7px 9px}
@@ -321,12 +326,12 @@
     if (Pz.inside || !G.ui) return;
     G.ui.fade(() => {
       if (G.main.running) G.main.paused = false; // o menu de pausa deixava o jogo congelado
-      const P = G.player; ret = { x: P.x, z: P.z }; Pz.active = true; Pz.inside = true; Pz.session = true; Pz.t0 = t0 || Date.now(); Pz.over = false; Pz.bat = 100; Pz.caught = 0; Pz.scare = null;
+      const P = G.player; ret = { x: P.x, z: P.z }; Pz.active = true; Pz.inside = true; Pz.session = true; Pz.t0 = t0 || Date.now(); Pz.over = false; Pz.bat = 100; Pz.caught = 0; Pz.scare = null; Pz.night = G.fnafNight || 1; Pz.bodies.clear(); Pz.down = false; Pz.ended = false; Pz.revT = 0; Pz.safe = 0; Pz.revHold = false;
       state.forEach((c) => { c.step = 0; c.node = [0, 0, 0, 1][c.i]; c.prev = c.node; c.chase = false; c.freeze = 0; c.mode = c.i === 3 ? 'idle' : 'patrol'; c.base = 0; c.wt = 0; c.pi = 0; c.path = null; c.nextRun = 25 + Math.random() * 15; });
       Pz.power = 100; Pz.out = false;
       P.teleport(wx(16), wz(45.6), Math.PI); G.cam.yaw = Math.PI; G.cam.fpPitch = 0;
       if (G.fnaf) G.fnaf.audio.init();
-      ui.style.display = 'block'; bar.style.display = 'flex'; hud.style.display = 'block'; G.ui.toast('FNAF: sobreviva até as 6 da manhã. Andar WASD · câmeras K · portas: chegue perto do painel (J/L)');
+      ui.style.display = 'block'; bar.style.display = 'flex'; hud.style.display = 'block'; G.ui.toast('FNAF · NOITE ' + Pz.night + ': sobreviva até as 6 da manhã. Andar WASD · câmeras K · portas: chegue perto do painel (J/L)');
     });
   };
   Pz.exit = function (silent) {
@@ -339,12 +344,49 @@
     });
   };
   function finish() {
-    if (Pz.over) return; Pz.over = true;
-    try { const k = 'ew_fnafc_n'; if ((parseInt(localStorage.getItem(k), 10) || 1) < 2) localStorage.setItem(k, '2'); } catch (e) { /* sem storage */ } // passou na Noite 1: libera o multiplayer
-    G.ui.banner && G.ui.banner('06:00 AM', 'Você sobreviveu à noite no FNAF');
+    if (Pz.over || Pz.ended) return; Pz.over = true;
+    const n = Pz.night || 1; let nxt = false;
+    try { const k = 'fda_night', cur = parseInt(localStorage.getItem(k), 10) || 1; if (n >= cur && n < 5) { localStorage.setItem(k, String(n + 1)); nxt = true; } } catch (e) { /* sem storage */ } // passou a noite: libera a próxima
+    G.ui.banner && G.ui.banner('06:00 AM', 'Noite ' + n + ' concluída' + (nxt ? ' · Noite ' + (n + 1) + ' liberada!' : ''));
     if (G.fnaf && G.fnaf.audio.bell) G.fnaf.audio.bell(3);
     if (G.fnaf) G.fnaf.report(true, Pz.caught);
     setTimeout(() => Pz.exit(), 3500);
+  }
+
+  /* ---------- queda, corpos e reanimação (multiplayer) ---------- */
+  const mpSend = (o) => { if (G.mp && G.mp.state === 'on') G.mp.send(Object.assign({ t: 'ev', to: 'all', k: 'fnaf' }, o)); };
+  function goDown(i) {
+    const P = G.player; Pz.down = true; Pz.bodies.set('me', { x: P.x, z: P.z, name: 'Você' }); mpSend({ a: 'dn', x: Math.round(P.x * 10) / 10, z: Math.round(P.z * 10) / 10 });
+    const c = state[i]; if (c) { c.mode = 'return'; c.after = c.i === 3 ? 'idle' : 'patrol'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } // quem pegou volta para o palco
+    state.forEach((q) => { q.chase = false; });
+    if (G.ui) G.ui.toast('Você foi pego! Um colega pode te reanimar. Enquanto isso, use as câmeras.');
+    checkEnd();
+  }
+  function reviveBody(id) {
+    const b = Pz.bodies.get(id); Pz.bodies.delete(id); if (G.mp && G.mp.state === 'on') G.mp.send({ t: 'ev', to: id, k: 'fnaf', a: 'rv' });
+    if (G.ui) G.ui.toast('Você reanimou ' + ((b && b.name) || 'o colega') + '!'); if (G.fnaf && G.fnaf.audio.bell) G.fnaf.audio.bell(1);
+  }
+  function checkEnd() {
+    if (Pz.ended || !Pz.inside) return; let alive = Pz.down ? 0 : 1;
+    if (G.mp && G.mp.state === 'on') for (const id of G.mp.players.keys()) if (!Pz.bodies.has(id)) alive++;
+    if (alive <= 0) endNight();
+  }
+  function endNight() { // todos caíram (ou o único jogador caiu): a noite acaba e precisa recomeçar
+    Pz.ended = true; G.ui.banner && G.ui.banner('A NOITE ACABOU', 'Todos foram pegos. Comece a noite de novo.'); if (G.fnaf) G.fnaf.audio.scare(); setTimeout(() => Pz.exit(), 3800);
+  }
+  Pz.onMsg = function (m) {
+    const a = m.a || (m.q ? 'q' : 't');
+    if (a === 'q') { if (Pz.inside) { mpSend({ a: 't', t0: Pz.t0 }); const b = Pz.down && Pz.bodies.get('me'); if (b) mpSend({ a: 'dn', x: b.x, z: b.z }); } return; }
+    if (a === 't') { if (Pz.inside) { if (G.fnafOnly && m.t0) Pz.t0 = m.t0; } else Pz.enter(m.t0); return; }
+    if (!Pz.inside) return;
+    if (a === 'dn') { const p = G.mp.players.get(m.from); Pz.bodies.set(m.from, { x: +m.x || 0, z: +m.z || 0, name: p ? p.name : 'Colega' }); checkEnd(); }
+    else if (a === 'up') Pz.bodies.delete(m.from);
+    else if (a === 'rv') { if (Pz.down) { Pz.down = false; Pz.bodies.delete('me'); Pz.safe = 3; mpSend({ a: 'up' }); if (G.ui) G.ui.toast('Você foi reanimado! Fuja!'); } }
+  };
+  let bodyM = null, bodyG = null;
+  function bodyDraw(b) {
+    if (!bodyM) { const B = new gfx.MB(0.03), Gm = new gfx.MB(0); B.box(I(0, 0.16, 0, 0.6, 0.3, 1.5), H('#3a5a8a')); B.box(I(0, 0.16, -0.3, 0.64, 0.3, 0.6), H('#8a3a3a')); B.sphere(I(0, 0.22, 0.95, 0.42, 0.42, 0.42), 8, 6, H('#d9b08a')); B.box(I(-0.5, 0.1, 0.2, 0.18, 0.18, 0.9), H('#d9b08a')); B.box(I(0.5, 0.1, 0.1, 0.18, 0.18, 0.9), H('#d9b08a')); Gm.cyl(I(0, 0.02, 0, 2.4, 0.03, 2.4), 18, 1, 1, H('#ff3b30'), false, false); bodyM = B.build(); bodyG = Gm.build(); }
+    const mm = I(b.x, Y0, b.z); gfx.draw(bodyM, mm, { outline: 0 }); gfx.draw(bodyG, mm, { emis: 1 });
   }
 
   /* ---------- por quadro ---------- */
@@ -354,6 +396,13 @@
     if (!Pz.inside) { Pz.inside = false; if (was) { hud.style.display = 'none'; lampB.style.display = 'none'; } return; }
     Pz.nearL = Math.hypot(P.x - wx(7.4), P.z - wz(41)) < 3.4; Pz.nearR = Math.hypot(P.x - wx(24.6), P.z - wz(41)) < 3.4; // portas: só perto do painel
     dlB.style.display = Pz.nearL ? 'block' : 'none'; drB.style.display = Pz.nearR ? 'block' : 'none';
+    // corpos dos colegas, reanimação e queda
+    let nb = null; if (!Pz.down) for (const [id, b] of Pz.bodies) if (id !== 'me' && Math.hypot(P.x - b.x, P.z - b.z) < 2.3) { nb = id; break; }
+    Pz.nearBody = nb; revB.style.display = nb && !Pz.camOn ? 'block' : 'none';
+    if (nb && Pz.revHold) { Pz.revT += dt; if (Pz.revT >= 4) { Pz.revT = 0; reviveBody(nb); } } else Pz.revT = Math.max(0, Pz.revT - dt * 2);
+    if (Pz.down) { const bd = Pz.bodies.get('me'); if (bd) { P.x = bd.x; P.z = bd.z; } P.vx = P.vz = 0; if (Math.floor(Date.now() / 1000) % 2 === 0) checkEnd(); }
+    dnEl.style.display = Pz.down && !Pz.camOn ? 'flex' : 'none';
+    if (Pz.safe > 0) Pz.safe -= dt;
     if (Pz.camOn) { P.vx = P.vz = 0; if (camSaved) { P.x = camSaved.x; P.z = camSaved.z; } }
     for (let i = 0; i < 2; i++) if (Pz.doors[i] && Math.abs(P.x - wx(DOOR_U[i])) < 0.9 && Math.abs(P.z - wz(DOOR_V)) < 1.5 && lastSafe) { P.x = lastSafe[0]; P.z = lastSafe[1]; }
     if (!Pz.camOn && !(Pz.doors[0] && Math.abs(P.x - wx(DOOR_U[0])) < 0.9 && Math.abs(P.z - wz(DOOR_V)) < 1.5)) lastSafe = [P.x, P.z];
@@ -362,7 +411,7 @@
     // bateria da lanterna
     if (Pz.lamp) { Pz.bat = Math.max(0, Pz.bat - dt * 6); if (Pz.bat <= 0) setLamp(false); } else Pz.bat = Math.min(100, Pz.bat + dt * 2.5);
     const sc = Pz.scare;
-    if (sc) { sc.t += dt; P.stun = Math.max(P.stun || 0, 0.3); flash.style.opacity = sc.t < 0.1 ? 0 : (Math.random() < 0.3 ? 0.55 : 0.05); if (sc.t > 1.7) { Pz.scare = null; flash.style.opacity = 0; P.teleport(wx(16), wz(45.6), Math.PI); G.cam.yaw = Math.PI; state.forEach((c) => { c.chase = false; }); } hudText(T); return; }
+    if (sc) { sc.t += dt; P.stun = Math.max(P.stun || 0, 0.3); flash.style.opacity = sc.t < 0.1 ? 0 : (Math.random() < 0.3 ? 0.55 : 0.05); if (sc.t > 1.7) { Pz.scare = null; flash.style.opacity = 0; goDown(sc.i); } hudText(T); return; }
     // energia: porta fechada e câmera gastam; sem energia, as portas abrem e tudo fica mais rápido
     const drain = 0.22 + 0.6 * (Pz.doors[0] ? 1 : 0) + 0.6 * (Pz.doors[1] ? 1 : 0) + (Pz.camOn ? 0.6 : 0);
     Pz.power = Math.max(0, Pz.power - drain * dt);
@@ -376,7 +425,7 @@
       if (c.mode === 'wait') { c.wt -= dt; c.move = false; if (c.wt <= 0) { c.mode = 'return'; c.after = c.i === 3 ? 'idle' : 'patrol'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } }
       else if (c.mode === 'return') {
         const n = c.path[Math.min(c.pi, c.path.length - 1)];
-        if (stepTo(c, wx(NODE[n][0]), wz(NODE[n][1]), 7 * pw(dt))) { c.pi++; if (c.pi >= c.path.length) { c.move = false; c.mode = c.after; c.base = T; c.step = 0; c.node = 0; c.prev = 0; c.nextRun = T + (25 + Math.random() * 15) * (1 - 0.1 * hourOf()); } }
+        if (stepTo(c, wx(NODE[n][0]), wz(NODE[n][1]), 7 * NM() * pw(dt))) { c.pi++; if (c.pi >= c.path.length) { c.move = false; c.mode = c.after; c.base = T; c.step = 0; c.node = 0; c.prev = 0; c.nextRun = T + (25 + Math.random() * 15) * (1 - 0.1 * hourOf()) / NM(); } }
       }
       else if (c.mode === 'idle') { // Raposa parada no palco, até decidir correr
         c.x = wx(NODE[0][0]) + (c.i - 1) * 3.2; c.z = wz(NODE[0][1]); c.y = Y0; c.yaw = 0; c.move = false;
@@ -384,20 +433,20 @@
       }
       else if (c.mode === 'run') { // corre com tudo até o escritório: feche a porta a tempo
         const n = c.path[Math.min(c.pi, c.path.length - 1)];
-        if (stepTo(c, wx(NODE[n][0]), wz(NODE[n][1]), 12 * pw(dt))) { c.pi++; if (c.pi >= c.path.length) { c.mode = 'return'; c.after = 'idle'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } }
+        if (stepTo(c, wx(NODE[n][0]), wz(NODE[n][1]), 12 * NM() * pw(dt))) { c.pi++; if (c.pi >= c.path.length) { c.mode = 'return'; c.after = 'idle'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } }
         c.y = Y0; c.move = true;
       }
       else { // patrulha (com perseguição)
         const pat = patrolAt(c, T - c.base);
         if (!c.chase) { c.x = pat[0]; c.z = pat[1]; c.y = pat[2]; c.yaw = pat[3]; }
         const dx = P.x - c.x, dz = P.z - c.z, d = Math.hypot(dx, dz);
-        const seen = d < 11 && clearLine(c.x, c.z, P.x, P.z);
+        const seen = d < 11 + NI() && clearLine(c.x, c.z, P.x, P.z);
         const lit = Pz.lamp && d < 16 && (dx * fwdX + dz * fwdZ) / (d || 1) > 0.8 && seen;
         c.freeze = lit ? Math.min(1, c.freeze + dt * 3) : Math.max(0, c.freeze - dt * 1.5);
-        if (!imm && !c.chase && seen && d < 9) { c.chase = true; c.lastSeen = T; }
+        if (!imm && !c.chase && seen && d < 9 + NI()) { c.chase = true; c.lastSeen = T; }
         if (c.chase) {
-          if (seen) c.lastSeen = T; else if (T - c.lastSeen > 5) { c.chase = false; continue; }
-          const spd = (4.2 + 0.5 * hour) * pw(dt) * (1 - 0.8 * c.freeze);
+          if (seen) c.lastSeen = T; else if (T - c.lastSeen > 5 + NI()) { c.chase = false; continue; }
+          const spd = (4.2 + 0.5 * hour) * NM() * pw(dt) * (1 - 0.8 * c.freeze);
           let tx, tz;
           if (seen && d < 12) { tx = P.x; tz = P.z; } else { const a = nearestNode(c.x, c.z), b = nearestNode(P.x, P.z), p = pathTo(a, b), n = p[Math.min(1, p.length - 1)]; tx = wx(NODE[n][0]); tz = wz(NODE[n][1]); }
           const l = Math.hypot(tx - c.x, tz - c.z) || 1; c.x += (tx - c.x) / l * spd; c.z += (tz - c.z) / l * spd; c.y = Y0; c.yaw = Math.atan2(tx - c.x, tz - c.z); c.move = true;
@@ -405,12 +454,12 @@
       }
       // pega o jogador (patrulha e corrida); atrás de porta fechada não alcança
       const dx2 = P.x - c.x, dz2 = P.z - c.z, d2 = Math.hypot(dx2, dz2);
-      if ((c.mode === 'patrol' || c.mode === 'run') && d2 < 1.15 && !imm && clearLine(c.x, c.z, P.x, P.z)) { Pz.scare = { i: c.i, t: 0 }; Pz.caught++; if (G.fnaf) G.fnaf.audio.scare(); G.cam.shake = 0.6; }
+      if ((c.mode === 'patrol' || c.mode === 'run') && d2 < 1.15 && !imm && !Pz.down && !Pz.ended && !(Pz.safe > 0) && clearLine(c.x, c.z, P.x, P.z)) { Pz.scare = { i: c.i, t: 0 }; Pz.caught++; if (G.fnaf) G.fnaf.audio.scare(); G.cam.shake = 0.6; }
       if (d2 < 7 && G.fnaf && !c.snd) { c.snd = 1.2; G.fnaf.audio.step(0); } else if (c.snd) { c.snd -= dt; if (c.snd <= 0) c.snd = 0; }
     }
     hudText(T);
   };
-  function hudText(T) { const h = Math.min(6, Math.floor(T / 40)), hh = h === 0 ? 12 : h; hud.textContent = hh + ' AM · ' + (Pz.out ? 'SEM ENERGIA' : 'ENERGIA ' + Math.ceil(Pz.power) + '%') + (Pz.caught ? ' · pego ' + Pz.caught + 'x' : ''); ui.querySelector('#pz-dl').classList.toggle('on', Pz.doors[0]); ui.querySelector('#pz-dr').classList.toggle('on', Pz.doors[1]); }
+  function hudText(T) { const h = Math.min(6, Math.floor(T / 40)), hh = h === 0 ? 12 : h; hud.textContent = 'NOITE ' + (Pz.night || 1) + ' · ' + hh + ' AM · ' + (Pz.out ? 'SEM ENERGIA' : 'ENERGIA ' + Math.ceil(Pz.power) + '%') + (Pz.caught ? ' · pego ' + Pz.caught + 'x' : '') + (Pz.revT > 0.05 ? ' · REANIMANDO ' + Math.floor(Pz.revT / 4 * 100) + '%' : ''); ui.querySelector('#pz-dl').classList.toggle('on', Pz.doors[0]); ui.querySelector('#pz-dr').classList.toggle('on', Pz.doors[1]); }
   Pz.light = function () {
     if (!Pz.inside) return;
     const e = gfx.env, L = Pz.lamp;
@@ -423,6 +472,7 @@
     gfx.draw(solid, null, { outline: 0 }); gfx.draw(glow, null, { emis: 1 });
     if (!Pz.inside) return;
     for (let i = 0; i < 2; i++) if (Pz.doors[i] && doorMesh[i]) gfx.draw(doorMesh[i], null, { outline: 0 });
+    for (const [id, b] of Pz.bodies) if (id !== 'me') bodyDraw(b);
     const t = performance.now() / 1000;
     for (const c of state) { if (!CR[c.i]) CR[c.i] = buildCr(SPEC[c.i]); drawCr(CR[c.i], c.x, c.y || Y0, c.z, c.yaw, t + c.i, 1.15, c.move && !(Pz.scare)); }
     const sc = Pz.scare;
@@ -442,4 +492,10 @@
   window.addEventListener('keydown', (e) => { if (!window.G || !G.pizza || !G.pizza.inside) return; const id = { j: 'pz-dl', l: 'pz-dr', k: 'pz-cam' }[e.key.toLowerCase()]; if ((id === 'pz-dl' && !G.pizza.nearL) || (id === 'pz-dr' && !G.pizza.nearR)) return; const b = id && document.getElementById(id); if (b) { b.click(); return; }
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; const L = [...document.querySelectorAll('#pz-cb button')]; if (!G.pizza.camOn || !L.length) return; // setas trocam de câmera
     const i = Math.max(0, L.findIndex((x) => x.classList.contains('sel'))); L[(i + (e.key === 'ArrowRight' ? 1 : L.length - 1)) % L.length].click(); });
+})();
+
+(function () {
+  // reanimar colega caído: segure E perto do corpo
+  window.addEventListener('keydown', (e) => { if (G.pizza && G.pizza.inside && e.key.toLowerCase() === 'e') G.pizza.revHold = true; });
+  window.addEventListener('keyup', (e) => { if (e.key.toLowerCase() === 'e' && G.pizza) G.pizza.revHold = false; });
 })();

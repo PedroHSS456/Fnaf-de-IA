@@ -120,8 +120,8 @@
     if (MP.lookT <= 0) { MP.lookT = 1; const lk = JSON.stringify(look()); if (lk !== MP.lookSent) { MP.lookSent = lk; send({ t: 'look', look: look() }); } }
     if (MP.sync) MP.sync.update(dt);
     const k = Math.min(1, dt * 10);
-    for (const r of MP.players.values()) {
-      if (!r.seen) continue;
+    for (const [pid, r] of MP.players) {
+      if (!r.seen || (G.pizza && G.pizza.bodies && G.pizza.bodies.has(pid))) continue; // colega caído: só o corpo aparece
       r.x += (r.tx - r.x) * k; r.y += (r.ty - r.y) * k; r.z += (r.tz - r.z) * k; r.yaw = M.lerpAng(r.yaw, r.tyaw, Math.min(1, dt * 12));
       r.ph += dt * (2 + r.sp * 1.6);
       if (r.tag) {
@@ -149,8 +149,8 @@
       rooms.forEach((r, n) => {
         const row = document.createElement('div'); row.className = 'mp-row fz-feed';
         const cam = document.createElement('i'); cam.textContent = 'CAM ' + String(n + 1).padStart(2, '0');
-        const info = document.createElement('span'); info.textContent = r.name + ' · ' + r.count + '/' + r.max + ' vigias';
-        const b = document.createElement('button'); b.textContent = r.count >= r.max ? 'LOTADA' : 'ENTRAR'; b.disabled = r.count >= r.max;
+        const info = document.createElement('span'); const mt = /^(.*) · N(\d)$/.exec(r.name), nn = mt ? +mt[2] : 1; info.textContent = (mt ? mt[1] : r.name) + ' · NOITE ' + nn + ' · ' + r.count + '/' + r.max;
+        const b = document.createElement('button'); const lock = nn > (G.fnafUnlocked ? G.fnafUnlocked() : 1); b.textContent = lock ? 'BLOQUEADA' : r.count >= r.max ? 'LOTADA' : 'ENTRAR'; b.disabled = lock || r.count >= r.max;
         b.onclick = () => enterRoom(r.id, r.name);
         row.append(cam, info, b); box.appendChild(row);
       });
@@ -161,9 +161,12 @@
     }
   };
   async function enterRoom(id, name) {
+    const mt = /· N(\d)$/.exec(name || ''), night = mt ? +mt[1] : 1;
+    if (G.fnafMode && night > (G.fnafUnlocked ? G.fnafUnlocked() : 1)) { MP.setStatus('Noite ' + night + ' bloqueada: conclua a anterior.', 'err'); return; }
+    G.fnafNight = night;
     MP.setStatus('Conectando…');
     try { await MP.join(id, name); } catch (e) { MP.setStatus(e.message, 'err'); return; }
-        if (G.fnafMode) { G.fnafMode = false; G.main.startFnaf(); const t0 = Date.now(); G.mp.send({ t: 'ev', to: 'all', k: 'fnaf', q: 1 }); G.pizza.enter(t0); return; }
+        if (G.fnafMode) { G.fnafMode = false; G.main.startFnaf(); const t0 = Date.now(); G.mp.send({ t: 'ev', to: 'all', k: 'fnaf', a: 'q' }); G.pizza.enter(t0); return; }
     // o progresso é o do próprio jogador: continua o save local, ou começa uma partida nova
     const d = G.save.load();
     G.ui.toast('Você entrou na sala ' + (name || ''));
@@ -176,9 +179,10 @@
     $('m-multi') && $('m-multi').addEventListener('click', () => MP.refreshList());
     $('mp-refresh') && ($('mp-refresh').onclick = () => MP.refreshList());
     $('mp-create') && ($('mp-create').onclick = async () => {
-      const name = ($('mp-room').value || '').trim().slice(0, 32) || ('Sala de ' + (G.save.settings.name || 'Player'));
+      const n0 = G.fnafNight || 1; if (n0 > (G.fnafUnlocked ? G.fnafUnlocked() : 1)) { MP.setStatus('Noite bloqueada: conclua a anterior.', 'err'); return; }
+      const name = (($('mp-room').value || '').trim() || ('Sala de ' + (G.save.settings.name || 'Player'))).slice(0, 24) + ' · N' + n0;
       $('mp-create').disabled = true;
-      try { const j = await MP.create(name); await enterRoom(j.id, j.name); }
+      try { const j = await MP.create(name); await enterRoom(j.id, name); }
       catch (e) { MP.setStatus(e.message, 'err'); }
       finally { $('mp-create').disabled = !MP.configured(); }
     });

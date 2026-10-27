@@ -110,12 +110,7 @@
     if (m.t === 'adm' && m.k === 'mode') { H.mode = !!m.on; refresh(); return true; }
     if (m.t === 'admins') { H.admins = m.admin || []; H.immune = m.immune || []; if (H.admin && H.mode) H.imm = H.immune.indexOf(G.mp.pid) >= 0; refresh(); return true; }
     if (m.t === 'horror') { H.set(m.on); return true; }
-    if (m.t === 'ev' && m.k === 'fnaf') {
-      if (!G.pizza) return true;
-      if (m.q) { if (G.pizza.inside) send({ t: 'ev', to: 'all', k: 'fnaf', t0: G.pizza.t0 }); } // alguém entrou: responde com o relógio da sala
-      else if (G.pizza.inside) { if (G.fnafOnly) G.pizza.t0 = m.t0; } else G.pizza.enter(m.t0);
-      return true;
-    }
+    if (m.t === 'ev' && m.k === 'fnaf') { if (G.pizza) G.pizza.onMsg(m); return true; }
     if (m.t === 'ev' && m.k === 'fnafend') { if (G.pizza) G.pizza.exit(); return true; }
     if (m.t === 'ev' && m.k === 'fnafres') { if (G.fnaf) G.fnaf.onResult(m); return true; }
     if (m.t === 'ev' && m.k === 'hzent') { H.spawnEnt(); return true; }
