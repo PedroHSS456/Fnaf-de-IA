@@ -240,14 +240,20 @@
   const TO_OFFICE = bfsFrom(OFFICE).d;
   const hash = (a, b, c) => { let h = (Math.imul(a + 1, 374761393) ^ Math.imul(b + 7, 668265263) ^ Math.imul(c + 13, 2147483647)) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; return (h ^ (h >>> 16)) / 4294967296; };
   const STEP = [3.0, 3.3, 2.8, 3.6];
-  const NM = () => 1 + 0.2 * ((Pz.night || 1) - 1), NI = () => (Pz.night || 1) - 1; // noites mais altas: mais rápidos, ativos e espertos
-  const state = [0, 1, 2, 3].map((i) => ({ i, mode: i === 3 ? 'idle' : 'patrol', base: 0, wt: 0, pi: 0, path: null, nextRun: 0, after: 'patrol', step: 0, node: [0, 0, 0, 1][i], prev: [0, 0, 0, 1][i], chase: false, x: 0, z: 0, y: 0, yaw: 0, move: false, lastSeen: 0, path: null, freeze: 0 }));
+  const NI = () => (Pz.night || 1) - 1; // noites mais altas: mais rápidos, ativos e espertos
+  const NM = () => [0.6, 0.9, 1.15, 1.4, 1.7][NI()] || 1; // velocidade
+  const AW = () => [5, 8, 10, 12, 14][NI()] || 10; // distância em que percebem o jogador
+  // vez de cada animatrônico: [ciclo, tempo fora do palco, atraso inicial] em segundos. Noite 1: um por vez e bem devagar; noite 5: todos soltos
+  const SCH = [[90, 22, 40], [84, 26, 30], [70, 35, 20], [60, 45, 10], [40, 40, 0]];
+  const outNow = (i, T) => { if (i > 2) return false; const [cy, out, off] = SCH[NI()] || SCH[0], t = T - off - i * cy / 3; return t >= 0 && (t % cy) < out; };
+  const foxyGap = () => [1e9, 70, 45, 30, 20][NI()] + Math.random() * 12; // a Raposa só corre a partir da noite 2
+  const state = [0, 1, 2, 3].map((i) => ({ i, mode: i === 3 ? 'idle' : 'stage', base: 0, wt: 0, pi: 0, path: null, nextRun: 0, after: 'patrol', step: 0, node: [0, 0, 0, 1][i], prev: [0, 0, 0, 1][i], chase: false, x: 0, z: 0, y: 0, yaw: 0, move: false, lastSeen: 0, path: null, freeze: 0 }));
   const hourOf = () => Math.min(5, Math.floor((Date.now() - Pz.t0) / 1000 / 40));
   function patrolAt(c, T) {
     const dur = STEP[c.i] * (1 - 0.08 * hourOf()) / (Pz.out ? 1.5 : 1) / NM(), s = Math.floor(T / dur);
     while (c.step < s) { // avança o passeio aleatório determinístico
       c.step++; const cur = c.node; let nb = ADJ[cur].filter((n) => n !== c.prev && !doorBlocks(cur, n)); if (!nb.length) nb = ADJ[cur].filter((n) => !doorBlocks(cur, n)); if (!nb.length) nb = [cur]; c.prev = cur;
-      const bias = 0.18 + 0.1 * hourOf() + 0.1 * NI(); let nx;
+      const bias = NI() === 0 ? 0.03 : 0.18 + 0.1 * hourOf() + 0.1 * NI(); let nx;
       if (hash(c.i, c.step, 5) < bias) { nx = nb.slice().sort((a, b) => TO_OFFICE[a] - TO_OFFICE[b])[0]; } else nx = nb[Math.floor(hash(c.i, c.step, 9) * nb.length)];
       c.node = nx == null ? cur : nx;
     }
@@ -327,7 +333,7 @@
     G.ui.fade(() => {
       if (G.main.running) G.main.paused = false; // o menu de pausa deixava o jogo congelado
       const P = G.player; ret = { x: P.x, z: P.z }; Pz.active = true; Pz.inside = true; Pz.session = true; Pz.t0 = t0 || Date.now(); Pz.over = false; Pz.bat = 100; Pz.caught = 0; Pz.scare = null; Pz.night = G.fnafNight || 1; Pz.bodies.clear(); Pz.down = false; Pz.ended = false; Pz.revT = 0; Pz.safe = 0; Pz.revHold = false;
-      state.forEach((c) => { c.step = 0; c.node = [0, 0, 0, 1][c.i]; c.prev = c.node; c.chase = false; c.freeze = 0; c.mode = c.i === 3 ? 'idle' : 'patrol'; c.base = 0; c.wt = 0; c.pi = 0; c.path = null; c.nextRun = 25 + Math.random() * 15; });
+      state.forEach((c) => { c.step = 0; c.node = [0, 0, 0, 1][c.i]; c.prev = c.node; c.chase = false; c.freeze = 0; c.mode = c.i === 3 ? 'idle' : 'stage'; c.base = 0; c.wt = 0; c.pi = 0; c.path = null; c.nextRun = foxyGap(); });
       Pz.power = 100; Pz.out = false;
       P.teleport(wx(16), wz(45.6), Math.PI); G.cam.yaw = Math.PI; G.cam.fpPitch = 0;
       if (G.fnaf) G.fnaf.audio.init();
@@ -357,7 +363,7 @@
   const mpSend = (o) => { if (G.mp && G.mp.state === 'on') G.mp.send(Object.assign({ t: 'ev', to: 'all', k: 'fnaf' }, o)); };
   function goDown(i) {
     const P = G.player; Pz.down = true; Pz.bodies.set('me', { x: P.x, z: P.z, name: 'Você' }); mpSend({ a: 'dn', x: Math.round(P.x * 10) / 10, z: Math.round(P.z * 10) / 10 });
-    const c = state[i]; if (c) { c.mode = 'return'; c.after = c.i === 3 ? 'idle' : 'patrol'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } // quem pegou volta para o palco
+    const c = state[i]; if (c) { c.mode = 'return'; c.after = c.i === 3 ? 'idle' : 'stage'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } // quem pegou volta para o palco
     state.forEach((q) => { q.chase = false; });
     if (G.ui) G.ui.toast('Você foi pego! Um colega pode te reanimar. Enquanto isso, use as câmeras.');
     checkEnd();
@@ -422,10 +428,14 @@
     for (const c of state) {
       // porta fechada na frente: espera 3 s e volta para o palco
       if ((c.mode === 'patrol' || c.mode === 'run') && doorNear(c) >= 0) { c.mode = 'wait'; c.wt = 3; c.chase = false; }
-      if (c.mode === 'wait') { c.wt -= dt; c.move = false; if (c.wt <= 0) { c.mode = 'return'; c.after = c.i === 3 ? 'idle' : 'patrol'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } }
+      if (c.mode === 'wait') { c.wt -= dt; c.move = false; if (c.wt <= 0) { c.mode = 'return'; c.after = c.i === 3 ? 'idle' : 'stage'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; } }
       else if (c.mode === 'return') {
         const n = c.path[Math.min(c.pi, c.path.length - 1)];
-        if (stepTo(c, wx(NODE[n][0]), wz(NODE[n][1]), 7 * NM() * pw(dt))) { c.pi++; if (c.pi >= c.path.length) { c.move = false; c.mode = c.after; c.base = T; c.step = 0; c.node = 0; c.prev = 0; c.nextRun = T + (25 + Math.random() * 15) * (1 - 0.1 * hourOf()) / NM(); } }
+        if (stepTo(c, wx(NODE[n][0]), wz(NODE[n][1]), 7 * NM() * pw(dt))) { c.pi++; if (c.pi >= c.path.length) { c.move = false; c.mode = c.after; c.base = T; c.step = 0; c.node = 0; c.prev = 0; c.nextRun = T + foxyGap(); } }
+      }
+      else if (c.mode === 'stage') { // parado no palco até a vez dele
+        c.x = wx(NODE[0][0]) + (c.i - 1) * 3.2; c.z = wz(NODE[0][1]); c.y = Y0; c.yaw = 0; c.move = false;
+        if (!imm && outNow(c.i, T)) { c.mode = 'patrol'; c.base = T; c.step = 0; c.node = 0; c.prev = 0; }
       }
       else if (c.mode === 'idle') { // Raposa parada no palco, até decidir correr
         c.x = wx(NODE[0][0]) + (c.i - 1) * 3.2; c.z = wz(NODE[0][1]); c.y = Y0; c.yaw = 0; c.move = false;
@@ -437,13 +447,14 @@
         c.y = Y0; c.move = true;
       }
       else { // patrulha (com perseguição)
+        if (!c.chase && c.i < 3 && !outNow(c.i, T)) { c.mode = 'return'; c.after = 'stage'; c.path = pathTo(nearestNode(c.x, c.z), 0); c.pi = 0; continue; } // acabou a vez dele: volta para o palco
         const pat = patrolAt(c, T - c.base);
         if (!c.chase) { c.x = pat[0]; c.z = pat[1]; c.y = pat[2]; c.yaw = pat[3]; }
         const dx = P.x - c.x, dz = P.z - c.z, d = Math.hypot(dx, dz);
-        const seen = d < 11 + NI() && clearLine(c.x, c.z, P.x, P.z);
+        const seen = d < AW() + 2 && clearLine(c.x, c.z, P.x, P.z);
         const lit = Pz.lamp && d < 16 && (dx * fwdX + dz * fwdZ) / (d || 1) > 0.8 && seen;
         c.freeze = lit ? Math.min(1, c.freeze + dt * 3) : Math.max(0, c.freeze - dt * 1.5);
-        if (!imm && !c.chase && seen && d < 9 + NI()) { c.chase = true; c.lastSeen = T; }
+        if (!imm && !c.chase && seen && d < AW()) { c.chase = true; c.lastSeen = T; }
         if (c.chase) {
           if (seen) c.lastSeen = T; else if (T - c.lastSeen > 5 + NI()) { c.chase = false; continue; }
           const spd = (4.2 + 0.5 * hour) * NM() * pw(dt) * (1 - 0.8 * c.freeze);
@@ -488,7 +499,7 @@
 })();
 
 (function () {
-  // teclado para PC na pizzaria: J/L portas, Q câmeras, E fecha as duas portas, R reanima (segure)
+  // teclado para PC na pizzaria: J/L portas, Q câmeras, E fecha as duas portas (de novo abre), R reanima (segure)
   window.addEventListener('keydown', (e) => { if (!window.G || !G.pizza || !G.pizza.inside) return; const id = { j: 'pz-dl', l: 'pz-dr', q: 'pz-cam' }[e.key.toLowerCase()]; if ((id === 'pz-dl' && !G.pizza.nearL) || (id === 'pz-dr' && !G.pizza.nearR)) return; const b = id && document.getElementById(id); if (b) { b.click(); return; }
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; const L = [...document.querySelectorAll('#pz-cb button')]; if (!G.pizza.camOn || !L.length) return; // setas trocam de câmera
     const i = Math.max(0, L.findIndex((x) => x.classList.contains('sel'))); L[(i + (e.key === 'ArrowRight' ? 1 : L.length - 1)) % L.length].click(); });
@@ -499,7 +510,7 @@
   window.addEventListener('keydown', (e) => { if (G.pizza && G.pizza.inside && e.key.toLowerCase() === 'r') G.pizza.revHold = true; });
   window.addEventListener('keydown', (e) => { // E: fecha as duas portas de uma vez
     if (e.key.toLowerCase() !== 'e' || !G.pizza || !G.pizza.inside || G.pizza.down || G.pizza.out || e.repeat) return;
-    [0, 1].forEach((i) => { if (!G.pizza.doors[i]) document.getElementById(i ? 'pz-dr' : 'pz-dl').click(); });
+    const both = G.pizza.doors[0] && G.pizza.doors[1]; [0, 1].forEach((i) => { if (both || !G.pizza.doors[i]) document.getElementById(i ? 'pz-dr' : 'pz-dl').click(); });
   });
   window.addEventListener('keyup', (e) => { if (e.key.toLowerCase() === 'r' && G.pizza) G.pizza.revHold = false; });
 })();

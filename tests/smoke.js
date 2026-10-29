@@ -36,6 +36,9 @@ const { chromium } = require('playwright');
   await p.evaluate(() => G.player.teleport(129.5, 71.5, Math.PI)); await p.waitForTimeout(700);
   r.portaPerto = await p.evaluate(() => getComputedStyle(document.getElementById('pz-dl')).display !== 'none' && getComputedStyle(document.getElementById('pz-dr')).display === 'none');
   r.sairBotao = await vis('#pz-exit');
+  r.modos0 = await p.evaluate(() => G.pizza.creatures.map((c) => c.mode).join()); // noite 1 começa tudo parado
+  r.umPorVez = true; r.saiu = 0; for (const T of [45, 70, 100, 125, 160, 190]) { await p.evaluate((x) => { G.pizza.t0 = Date.now() - x * 1000; }, T); await p.waitForTimeout(900); const n = await p.evaluate(() => G.pizza.creatures.filter((c, i) => i < 3 && (c.mode === 'patrol')).length); if (n > 1) r.umPorVez = false; r.saiu += n; }
+  r.eFecha = false; await p.evaluate(() => { G.pizza.doors = [false, false]; }); await p.keyboard.press('e'); await p.waitForTimeout(200); r.eFecha = await p.evaluate(() => G.pizza.doors[0] && G.pizza.doors[1]); await p.keyboard.press('e'); await p.waitForTimeout(200); r.eAbre = await p.evaluate(() => !G.pizza.doors[0] && !G.pizza.doors[1]);
   await p.evaluate(() => { G.pizza.t0 = Date.now() - 150000; }); await p.waitForTimeout(6000);
   r.bichos = await p.evaluate(() => G.pizza.creatures.every((c) => isFinite(c.x) && isFinite(c.z) && G.pizza.inBox(c.x, c.z)));
   r.multi = await p.evaluate(async () => { // queda e reanimação com um colega simulado
