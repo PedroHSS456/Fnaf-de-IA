@@ -48,7 +48,7 @@ const { chromium } = require('playwright');
     o.rev = !Pz.bodies.has('p2') && sent.some((m) => m.a === 'rv' && m.to === 'p2');
     G.mp.players.delete('p2'); G.mp.state = 'off'; return o;
   });
-  await p.keyboard.press('k'); r.camPizza = await p.evaluate(() => G.pizza.camOn === true); await p.keyboard.press('k');
+  await p.keyboard.press('q'); r.camPizza = await p.evaluate(() => G.pizza.camOn === true); await p.keyboard.press('q');
   await p.keyboard.press('j'); r.portaPizza = await p.evaluate(() => G.pizza.doors[0] === true);
   await p.keyboard.press('Escape'); await p.waitForTimeout(300); r.pausa = await vis('#p-pause') && !(await vis('#pz-jor'));
   await p.click('#pz-res'); await p.waitForTimeout(300); await p.click('#pz-exit'); await p.waitForTimeout(1500); r.sair = await vis('#ft') && !(await p.evaluate(() => G.pizza.inside));

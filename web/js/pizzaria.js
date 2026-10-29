@@ -488,14 +488,18 @@
 })();
 
 (function () {
-  // teclado para PC na pizzaria: J porta esquerda, L porta direita, K câmeras
-  window.addEventListener('keydown', (e) => { if (!window.G || !G.pizza || !G.pizza.inside) return; const id = { j: 'pz-dl', l: 'pz-dr', k: 'pz-cam' }[e.key.toLowerCase()]; if ((id === 'pz-dl' && !G.pizza.nearL) || (id === 'pz-dr' && !G.pizza.nearR)) return; const b = id && document.getElementById(id); if (b) { b.click(); return; }
+  // teclado para PC na pizzaria: J/L portas, Q câmeras, E fecha as duas portas, R reanima (segure)
+  window.addEventListener('keydown', (e) => { if (!window.G || !G.pizza || !G.pizza.inside) return; const id = { j: 'pz-dl', l: 'pz-dr', q: 'pz-cam' }[e.key.toLowerCase()]; if ((id === 'pz-dl' && !G.pizza.nearL) || (id === 'pz-dr' && !G.pizza.nearR)) return; const b = id && document.getElementById(id); if (b) { b.click(); return; }
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; const L = [...document.querySelectorAll('#pz-cb button')]; if (!G.pizza.camOn || !L.length) return; // setas trocam de câmera
     const i = Math.max(0, L.findIndex((x) => x.classList.contains('sel'))); L[(i + (e.key === 'ArrowRight' ? 1 : L.length - 1)) % L.length].click(); });
 })();
 
 (function () {
-  // reanimar colega caído: segure E perto do corpo
-  window.addEventListener('keydown', (e) => { if (G.pizza && G.pizza.inside && e.key.toLowerCase() === 'e') G.pizza.revHold = true; });
-  window.addEventListener('keyup', (e) => { if (e.key.toLowerCase() === 'e' && G.pizza) G.pizza.revHold = false; });
+  // reanimar colega caído: segure R perto do corpo
+  window.addEventListener('keydown', (e) => { if (G.pizza && G.pizza.inside && e.key.toLowerCase() === 'r') G.pizza.revHold = true; });
+  window.addEventListener('keydown', (e) => { // E: fecha as duas portas de uma vez
+    if (e.key.toLowerCase() !== 'e' || !G.pizza || !G.pizza.inside || G.pizza.down || G.pizza.out || e.repeat) return;
+    [0, 1].forEach((i) => { if (!G.pizza.doors[i]) document.getElementById(i ? 'pz-dr' : 'pz-dl').click(); });
+  });
+  window.addEventListener('keyup', (e) => { if (e.key.toLowerCase() === 'r' && G.pizza) G.pizza.revHold = false; });
 })();
