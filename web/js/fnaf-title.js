@@ -15,7 +15,7 @@
   drawNights();
   // a capa aparece sempre que o jogo pede o menu principal
   const um = G.ui.menu;
-  G.ui.menu = function (n) { ft.hidden = n !== 'title'; return um.apply(this, arguments); };
+  G.ui.menu = function (n) { ft.hidden = n !== 'title'; if (n && document.pointerLockElement && document.exitPointerLock) document.exitPointerLock(); return um.apply(this, arguments); };
   const go = (fn) => () => { if (ft.hidden) return; fn(); };
   const play = (reset) => { try { if (reset) localStorage.setItem('ew_fnafc_n', '1'); } catch (e) { /* sem storage */ } G.ui.menu(null); G.fnaf && G.fnaf.audio.init(); G.fnafc.start(); };
   const nw = go(() => play(true)), ct = go(() => play(false)), mp = go(() => { G.fnafMode = true; drawNights(); $('mp-name').textContent = G.save.settings.name || 'Player 1'; $('m-multi').click(); });
@@ -25,4 +25,15 @@
     if (ft.hidden || e.repeat) return; const k = e.key.toLowerCase();
     if (k === 'n' || k === 'enter' || k === '1') nw(); else if (k === 'c' || k === '2') ct(); else if (k === 'm' || k === '3') mp();
   });
+  // trava do mouse (como o Shift Lock do Roblox): Shift liga/desliga, Esc/menus soltam; com ela o mouse gira a câmera
+  const cvs = $('cv'), tag = document.createElement('div'), dot = document.createElement('div');
+  tag.id = 'ml-tag'; tag.textContent = 'MOUSE TRAVADO · Shift destrava'; dot.id = 'ml-dot'; document.body.append(tag, dot);
+  const locked = () => document.pointerLockElement === cvs;
+  document.addEventListener('pointerlockchange', () => { tag.style.display = dot.style.display = locked() ? 'block' : 'none'; });
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Shift' || !G.main.running) return; e.stopImmediatePropagation(); if (e.repeat) return; // sem esquiva ao apertar Shift
+    if (locked()) { document.exitPointerLock(); return; }
+    if (!G.main.paused && cvs.requestPointerLock) { const r = cvs.requestPointerLock(); if (r && r.catch) r.catch(() => {}); }
+  }, true);
+  window.addEventListener('mousemove', (e) => { if (!locked()) return; const k = 0.0025 * (G.save.settings.camSens || 1); G.input.camDX += e.movementX * k; G.input.camDY += e.movementY * k; });
 })();

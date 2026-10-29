@@ -16,7 +16,7 @@ A capa é a imagem `web/img/titulo.jpg`; os botões são invisíveis e ficam em 
 |---|---|
 | Capa | N / Enter / 1 = New Game · C / 2 = Continue · M / 3 = Multiplayer |
 | Clássico | A / D portas · Z / X luz (segurar) · W câmeras · Q / E trocar câmera · ← / → olhar de lado · Esc sair |
-| Pizzaria | WASD andar · mouse/setas olhar · J / L portas (só perto do painel da porta) · K câmeras · ← / → trocar câmera · botão SAIR · Esc pausa |
+| Pizzaria | WASD andar · Shift trava o mouse (como no Roblox) e ele gira a câmera · setas olhar · J / L portas (só perto do painel da porta) · K câmeras · ← / → trocar câmera · botão SAIR · Esc pausa |
 
 No celular, os mesmos botões aparecem na tela.
 

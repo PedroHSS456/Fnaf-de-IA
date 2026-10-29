@@ -38,3 +38,5 @@
 #p-multi.fz .fz-chips button.on{background:#9dffb0;color:#000}
 #p-multi.fz .fz-chips button:disabled{opacity:.4}
 #p-multi.fz .fz-sel{display:flex;flex-direction:column;gap:8px}
+#ml-tag{position:fixed;left:50%;top:44px;transform:translateX(-50%);display:none;z-index:45;color:#9dffb0;font:700 11px ui-monospace,monospace;letter-spacing:.14em;background:rgba(0,0,0,.55);padding:4px 10px;border:1px solid #2c5a3a;pointer-events:none}
+#ml-dot{position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:rgba(255,255,255,.8);display:none;z-index:45;pointer-events:none}
